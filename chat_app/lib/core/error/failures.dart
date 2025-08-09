@@ -23,3 +23,11 @@ class NetworkFailure extends Failure {
 class AuthFailure extends Failure {
   const AuthFailure(String message) : super(message);
 }
+
+class InvalidInputFailure extends Failure {
+  const InvalidInputFailure(String message) : super(message);
+}
+
+class NotFoundFailure extends Failure {
+  NotFoundFailure(String message) : super(message);
+}

@@ -7,81 +7,118 @@ import 'dart:convert';
 
 abstract class AuthRemoteDataSource {
   Future<String> login(String email, String password);
-  Future<String> signUp(SignUpRequest request); 
+  Future<UserModel> signUp(SignUpRequest request); 
   Future<User> getCurrentUser(String token);
 }
 
 
-// lib/data/datasources/remote/auth_remote_data_source_impl.dart
 
 class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
   final http.Client client;
-  static const String _baseUrl = 'https://g5-flutter-learning-path-be.onrender.com/api/v2';
+  static const String _baseUrl = 'https://g5-flutter-learning-path-be-tvum.onrender.com/api/v3/';
 
   AuthRemoteDataSourceImpl(this.client);
 
   @override
   Future<String> login(String email, String password) async {
-    final response = await client.post(
-      Uri.parse('$_baseUrl/auth/login'),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({
-        'email': email,
-        'password': password,
-      }),
-    );
+    try {
+      final response = await client.post(
+        Uri.parse('${_baseUrl}auth/login'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'email': email,
+          'password': password,
+        }),
+      );
 
-    return _parseAuthResponse(response);
+      return _parseAuthResponse(response);
+    } catch (e) {
+      print('Login error: $e');
+      throw AuthException();
+    }
   }
 
   @override
-  Future<String> signUp(SignUpRequest signUp) async {
-    final response = await client.post(
-      Uri.parse('$_baseUrl/auth/register'),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({
-        'name': signUp.name,
-        'email': signUp.email,
-        'password': signUp.password,
-      }),
-    );
+  Future<UserModel> signUp(SignUpRequest signUp) async {
+    try {
+      final response = await client.post(
+        Uri.parse('${_baseUrl}auth/register'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'name': signUp.name,
+          'email': signUp.email,
+          'password': signUp.password,
+        }),
+      );
 
-    return _parseAuthResponse(response);
+      return _parseUserResponse(response);
+    } catch (e) {
+      print('SignUp error: $e');
+      throw AuthException();
+    }
   }
 
   @override
   Future<UserModel> getCurrentUser(String token) async {
-    final response = await client.get(
-      Uri.parse('$_baseUrl/users/me'),
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer $token',
-      },
-    );
+    try {
+      final response = await client.get(
+        Uri.parse('${_baseUrl}users/me'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+      );
 
-    return _parseUserResponse(response);
-  }
-
-  // Helper Methods
-  String _parseAuthResponse(http.Response response) {
-    final statusCode = response.statusCode;
-    final body = jsonDecode(response.body) as Map<String, dynamic>;
-
-    if (statusCode == 200 || statusCode == 201) {
-      return body['data']['access_token'] as String;
-    } else {
-      throw AuthException(body['message'] as String? ?? 'Authentication failed');
+      return _parseUserResponse(response);
+    } catch (e) {
+      print('Get current user error: $e');
+      throw AuthException();
     }
   }
 
+  String _parseAuthResponse(http.Response response) {
+    final statusCode = response.statusCode;
+    final rawBody = response.body.trim();
+
+    if (statusCode == 200 || statusCode == 201) {
+      if (rawBody.isEmpty) {
+        throw Exception("Empty response body on success status");
+      }
+
+      final body = jsonDecode(rawBody) as Map<String, dynamic>;
+      print(body);
+
+      if (body['data'] == null || body['data']['access_token'] == null) {
+        throw Exception("No access token in response");
+      }
+
+      return body['data']['access_token'] as String;
+    } else {
+      throw AuthException();
+    }
+  }
+
+
   UserModel _parseUserResponse(http.Response response) {
     final statusCode = response.statusCode;
+    print('Response status code: $statusCode');
+    print('Response body: ${response.body}');
+    
+    if (response.body.isEmpty) {
+      throw AuthException();
+    }
+    
     final body = jsonDecode(response.body) as Map<String, dynamic>;
 
-    if (statusCode == 200) {
-      return UserModel.fromJson(body['data']);
+    if (statusCode == 200 || statusCode == 201) {
+      if (body['data'] != null) {
+        return UserModel.fromJson(body['data']);
+      } else {
+        throw AuthException();
+      }
     } else {
-      throw AuthException(body['message'] as String? ?? 'Failed to fetch user');
+      print('Error response: ${body['message'] ?? 'Unknown error'}');
+      throw AuthException();
     }
   }
 }

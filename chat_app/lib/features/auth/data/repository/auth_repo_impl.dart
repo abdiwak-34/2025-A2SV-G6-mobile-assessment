@@ -24,35 +24,26 @@ class AuthRepositoryImpl implements AuthRepository {
   });
 
   @override
-  Future<Either<Failure, User>> getCurrentUser(String id) async {
+  Future<Either<Failure, User>> getCurrentUser(String token) async {
+    if (!await networkInfo.isConnected) {
+      return Left(NetworkFailure('No internet connection'));
+    }
+
     try {
-
-      final cachedUser = await localDataSource.getCachedUser();
-      if (cachedUser != null && cachedUser.id == id) {
-        return Right(cachedUser);
-      }
-
-      if (!await networkInfo.isConnected) {
-        return Left(NetworkFailure('network failure'));
-      }
-
-      final token = await localDataSource.getCachedAccessToken();
-      if (token == null) return Left(CacheFailure('cache failure'));
-
       final user = await remoteDataSource.getCurrentUser(token);
       final userModel = UserModel(id: user.id, name: user.name, email: user.email);
       await localDataSource.cacheCurrentUser(userModel);
       return Right(userModel);
     } on AuthException catch (e) {
-      return Left(AuthFailure(e.toString()));
+      return Left(AuthFailure('Authentication failed: ${e.toString()}'));
     } catch (e) {
-      return Left(ServerFailure('server failed'));
+      print('Unexpected getCurrentUser error: $e');
+      return Left(ServerFailure('Failed to get user: ${e.toString()}'));
     }
   }
 
   @override
   Future<Either<Failure, String>> login(LoginData data) async {
-
     if (!await networkInfo.isConnected) {
       return Left(NetworkFailure('network failure'));
     }
@@ -62,17 +53,19 @@ class AuthRepositoryImpl implements AuthRepository {
       final user = await remoteDataSource.getCurrentUser(token);
       final userModel = UserModel(id: user.id, name: user.name, email: user.email);
 
-      
       await Future.wait([
         localDataSource.cacheAccessToken(token),
         localDataSource.cacheCurrentUser(userModel),
       ]);
 
       return Right(token);
-    } on AuthException {
-      return Left(AuthFailure('authentication error'));
-    } on ServerExceptions {
-      return Left(ServerFailure('server failed'));
+    } on AuthException catch (e) {
+      return Left(AuthFailure('Authentication failed: ${e.toString()}'));
+    } on ServerExceptions catch (e) {
+      return Left(ServerFailure('Server error: ${e.toString()}'));
+    } catch (e) {
+      print('Unexpected login error: $e');
+      return Left(ServerFailure('Unexpected error occurred: ${e.toString()}'));
     }
   }
 
@@ -89,35 +82,24 @@ class AuthRepositoryImpl implements AuthRepository {
         password: data.password,
       );
 
-      final token = await remoteDataSource.signUp(signUpRequest);
-      final user = await remoteDataSource.getCurrentUser(token);
+      final user = await remoteDataSource.signUp(signUpRequest);
+      
       final userModel = UserModel(id: user.id, name: user.name, email: user.email);
 
       await Future.wait([
-        localDataSource.cacheAccessToken(token),
         localDataSource.cacheCurrentUser(userModel),
       ]);
 
       return Right(user);
-    } on AuthException catch (e) {
-      return Left(AuthFailure(e.toString()));
+    } on AuthException {
+      return Left(AuthFailure('you dont have access credential'));
     } catch (e) {
-      return Left(ServerFailure('server failed'));
+      return Left(ServerFailure('what ???'));
     }
   }
 
   @override
-  Future<Either<Failure, Unit>> logout(String token) async {
-
-    final isConnected = await networkInfo.isConnected;
-    if (isConnected && token.isNotEmpty) {
-      try {
-        await localDataSource.clearTokens();
-        await localDataSource.clearUserData();
-      } on CacheExceptions {
-        return left(CacheFailure('cache failed'));
-      }
-    }
+  Future<Either<Failure, Unit>> logout() async {
 
     await Future.wait([
       localDataSource.clearTokens(),

@@ -17,7 +17,7 @@ abstract class AuthLocalDataSource {
 
 class AuthLocalDataSourceImpl implements AuthLocalDataSource {
   static const _userKey = 'cached_user';
-  static const _tokenKey = 'auth_token'; // Use flutter_secure_storage for prod
+  static const _tokenKey = 'auth_token';
 
   final SharedPreferences sharedPreferences;
 
