@@ -1,4 +1,5 @@
 import 'package:chat_app/core/network_info.dart';
+import 'package:chat_app/features/auth/domain/usecases/get_users.dart';
 import 'package:chat_app/features/chat/data/datasources/chat_local_datasources.dart';
 import 'package:chat_app/features/chat/data/datasources/chat_remote_datasources.dart';
 import 'package:chat_app/features/chat/data/repository/chat_repo_impl.dart';
@@ -34,6 +35,7 @@ Future<void> init() async {
   sl.registerLazySingleton<InternetConnectionChecker>(() => connectionChecker);
   sl.registerLazySingleton<NetworkInfo>(() => NetworkInfoImpl(sl()));
   sl.registerLazySingleton(() => http.Client());
+  
 
 
   sl.registerLazySingleton<AuthLocalDataSource>(() => AuthLocalDataSourceImpl(sl()));
@@ -53,6 +55,7 @@ Future<void> init() async {
   sl.registerLazySingleton<SignUpUsecase>(() => SignUpUsecase(sl()));
   sl.registerLazySingleton<GetcurrentUserUsecase>(() => GetcurrentUserUsecase(sl()));
   sl.registerLazySingleton<LogoutUsecase>(() => LogoutUsecase(sl()));
+  sl.registerLazySingleton<GetUserUsecase>(() => GetUserUsecase(sl()));
 
   sl.registerLazySingleton<GetAllChatsUsecase>(()=>GetAllChatsUsecase(sl()));
   sl.registerLazySingleton<GetChatByIdUsecase>(() => GetChatByIdUsecase(sl()));

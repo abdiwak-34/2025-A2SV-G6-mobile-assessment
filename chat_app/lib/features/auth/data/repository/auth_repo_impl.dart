@@ -45,6 +45,7 @@ class AuthRepositoryImpl implements AuthRepository {
   @override
   Future<Either<Failure, String>> login(LoginData data) async {
     if (!await networkInfo.isConnected) {
+      print('Network is not connected');
       return Left(NetworkFailure('network failure'));
     }
 
