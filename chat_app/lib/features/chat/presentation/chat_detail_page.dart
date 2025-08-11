@@ -15,6 +15,19 @@ class ChatDetailPage extends StatefulWidget {
 class _ChatDetailPageState extends State<ChatDetailPage> {
   final TextEditingController _controller = TextEditingController();
 
+  @override
+  void initState() {
+    super.initState();
+    // Fetch once when page opens
+    context.read<ChatBloc>().add(GetChatMessagesEvent(widget.chat.id));
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
   void _sendMessage() {
     final text = _controller.text.trim();
     if (text.isEmpty) return;
@@ -26,14 +39,20 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
 
   @override
   Widget build(BuildContext context) {
-    context.read<ChatBloc>().add(GetChatMessagesEvent(widget.chat.id));
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.chat.user2.name.isNotEmpty
             ? widget.chat.user2.name
             : 'Chat'),
       ),
-      body: Column(
+      body: BlocListener<ChatBloc, ChatState>(
+        listener: (context, state) {
+          if (state is ChatMessageSended) {
+            // Refresh messages after sending
+            context.read<ChatBloc>().add(GetChatMessagesEvent(widget.chat.id));
+          }
+        },
+        child: Column(
         children: [
           Expanded(
             child: BlocBuilder<ChatBloc, ChatState>(
@@ -99,6 +118,7 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
             ),
           )
         ],
+      ),
       ),
     );
   }

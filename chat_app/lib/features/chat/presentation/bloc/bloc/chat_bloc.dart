@@ -64,7 +64,6 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
     SendMessageEvent event,
     Emitter<ChatState> emit,
   ) async {
-    emit(ChatLoading());
     final params = SendMessageParameters(
       chatId: event.chatId,
       message: event.message,
