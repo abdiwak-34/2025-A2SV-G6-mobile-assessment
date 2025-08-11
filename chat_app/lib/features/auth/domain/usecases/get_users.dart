@@ -4,13 +4,13 @@ import 'package:chat_app/features/auth/domain/entities/user_entity.dart';
 import 'package:chat_app/features/auth/domain/repositories/auth_repository.dart';
 import '../../../../core/error/failures.dart';
 
-class GetcurrentUserUsecase implements UseCase<User, NoParams> {
+class GetUserUsecase implements UseCase<List<User>, NoParams> {
   final AuthRepository authRepository;
 
-  GetcurrentUserUsecase(this.authRepository);
+  GetUserUsecase(this.authRepository);
 
   @override
-  Future<Either<Failure, User>> call(NoParams params) async {
-    return await authRepository.getCurrentUser();
+  Future<Either<Failure, List<User>>> call(NoParams params) async {
+    return await authRepository.getUsers();
   }
 }

@@ -10,5 +10,6 @@ abstract class ChatRepository {
   Future<Either<Failure, Chat>> getChatById(String chatId);
   Future<Either<Failure, Chat>> initiateChat(String userId);
   Future<Either<Failure, Unit>> deleteChat(String chatId);
+  Future<Either<Failure, Unit>> sendMessage(String chatId, String message, String type);
 
 }

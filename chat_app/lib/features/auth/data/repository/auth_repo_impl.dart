@@ -24,13 +24,13 @@ class AuthRepositoryImpl implements AuthRepository {
   });
 
   @override
-  Future<Either<Failure, User>> getCurrentUser(String token) async {
+  Future<Either<Failure, User>> getCurrentUser() async {
     if (!await networkInfo.isConnected) {
       return Left(NetworkFailure('No internet connection'));
     }
 
     try {
-      final user = await remoteDataSource.getCurrentUser(token);
+      final user = await remoteDataSource.getCurrentUser();
       final userModel = UserModel(id: user.id, name: user.name, email: user.email);
       await localDataSource.cacheCurrentUser(userModel);
       return Right(userModel);
@@ -50,7 +50,7 @@ class AuthRepositoryImpl implements AuthRepository {
 
     try {
       final token = await remoteDataSource.login(data.email, data.password);
-      final user = await remoteDataSource.getCurrentUser(token);
+      final user = await remoteDataSource.getCurrentUser();
       final userModel = UserModel(id: user.id, name: user.name, email: user.email);
 
       await Future.wait([
@@ -108,4 +108,22 @@ class AuthRepositoryImpl implements AuthRepository {
 
     return const Right(unit);
   }
+
+  @override
+  Future<Either<Failure, List<User>>> getUsers() async {
+    if (!await networkInfo.isConnected) {
+      return Left(NetworkFailure('No internet connection'));
+    }
+
+    try {
+      final users = await remoteDataSource.getUsers();
+      return Right(users);
+    } on AuthException catch (e) {
+      return Left(AuthFailure('Authentication failed: ${e.toString()}'));
+    } catch (e) {
+      print('Unexpected getUsers error: $e');
+      return Left(ServerFailure('Failed to get users: ${e.toString()}'));
+    }
+  }
 }
+

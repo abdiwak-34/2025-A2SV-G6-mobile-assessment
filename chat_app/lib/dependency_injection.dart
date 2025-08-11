@@ -20,6 +20,7 @@ import 'package:chat_app/features/auth/domain/usecases/logout_usecase.dart';
 import 'package:chat_app/features/auth/domain/usecases/sign_up_usecase.dart';
 import 'package:chat_app/features/auth/presentation/bloc/bloc/auth_bloc.dart';
 import 'package:get_it/get_it.dart';
+import 'package:chat_app/core/socket/socket_service.dart';
 import 'package:internet_connection_checker/internet_connection_checker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -36,14 +37,17 @@ Future<void> init() async {
 
 
   sl.registerLazySingleton<AuthLocalDataSource>(() => AuthLocalDataSourceImpl(sl()));
-  sl.registerLazySingleton<AuthRemoteDataSource>(() => AuthRemoteDataSourceImpl(sl()));
+  sl.registerLazySingleton<AuthRemoteDataSource>(() => AuthRemoteDataSourceImpl(sl(), sl()));
 
   sl.registerLazySingleton<ChatRemoteDataSource>(() => ChatRemoteDataSourceImpl(sl(), sl()));
   sl.registerLazySingleton<ChatLocalDataSource>(() => ChatLocalDatasourcesImpl(sl()));
 
+  // Socket service
+  sl.registerLazySingleton<SocketService>(() => SocketService(sl()));
+
   sl.registerLazySingleton<AuthRepository>(() => AuthRepositoryImpl(remoteDataSource: sl(), localDataSource: sl(),networkInfo: sl()));
 
-  sl.registerLazySingleton<ChatRepository>(() => ChatRepoImpl(sl(), sl(),sl()));
+  sl.registerLazySingleton<ChatRepository>(() => ChatRepoImpl(sl(), sl(),sl(), sl()));
 
   sl.registerLazySingleton<LoginUsecase>(() => LoginUsecase(sl()));
   sl.registerLazySingleton<SignUpUsecase>(() => SignUpUsecase(sl()));
@@ -56,6 +60,6 @@ Future<void> init() async {
   sl.registerLazySingleton<InitiateChat>(() => InitiateChat(sl()));
   sl.registerLazySingleton<GetChatMessages>(() => GetChatMessages(sl()));
 
-  sl.registerFactory<AuthBloc>(() => AuthBloc(login: sl(), signUp: sl(), logout: sl(), getCurrentUser: sl()));
+  sl.registerFactory<AuthBloc>(() => AuthBloc(login: sl(), signUp: sl(), logout: sl(), getCurrentUser: sl(), getUsers: sl()));
   sl.registerFactory<ChatBloc>(()=>ChatBloc(getAllChats: sl()));
 }

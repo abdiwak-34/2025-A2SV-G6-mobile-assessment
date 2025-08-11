@@ -41,3 +41,12 @@ final class RegisterSuccess extends AuthState {
   @override
   List<Object> get props => [user];
 }
+
+final class UsersLoaded extends AuthState {
+  final List<User> users;
+
+  const UsersLoaded(this.users);
+
+  @override
+  List<Object> get props => [users];
+}

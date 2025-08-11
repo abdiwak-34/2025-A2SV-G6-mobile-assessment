@@ -31,4 +31,11 @@ final class SignUpEvent extends AuthEvent {
 
 final class LogoutEvent extends AuthEvent {}
 
+final class GetUsersEvent extends AuthEvent {
+  const GetUsersEvent();
+
+  @override
+  List<Object> get props => [];
+}
+
 final class CheckAuthStatusEvent extends AuthEvent {}

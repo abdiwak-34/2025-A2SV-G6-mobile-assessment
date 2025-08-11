@@ -3,272 +3,193 @@ import 'package:chat_app/features/auth/presentation/bloc/bloc/auth_bloc.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:chat_app/features/chat/domain/entities/chat_entity.dart';
+import 'package:chat_app/features/chat/presentation/chat_detail_page.dart';
+import 'package:chat_app/features/chat/domain/usecases/initiate_chat.dart';
+import 'package:chat_app/dependency_injection.dart' as di;
 
 class ChatHomePage extends StatelessWidget {
   const ChatHomePage({super.key});
 
   @override
   Widget build(BuildContext context) {
-
-
     context.read<ChatBloc>().add(const GetAllChatsEvent('current_user_id'));
-    return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        title: const Text(
-          'Chats',
-          style: TextStyle(
-            color: Colors.black,
-            fontSize: 24,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        actions: [
 
-          BlocListener<AuthBloc, AuthState>(
-            listener: (context, state) {
-              if (state is UnAuthenticated) {
-                Navigator.of(context).pushReplacementNamed('/login');
-              } else if (state is AuthError) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('Logout failed: ${state.message}'),
-                    backgroundColor: Colors.red,
-                  ),
-                );
-              }
-            },
-            child: IconButton(
-              onPressed: () {
-                _showLogoutDialog(context);
-              },
-              icon: const Icon(
-                Icons.logout,
-                color: Colors.black,
-              ),
-              tooltip: 'Logout',
-            ),
-          ),
-        ],
-      ),
-      body: SafeArea(
-        child: Column(
-          children: [
-            // ===== Top Stories (Dummy Data) =====
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: SizedBox(
-                      height: 90,
-                      child: ListView(
-                        scrollDirection: Axis.horizontal,
-                        children: [
-                          _buildStory("My status"),
-                          _buildStory("Joh"),
-                          _buildStory("Marina"),
-                          _buildStory("Dean"),
-                          _buildStory("Max"),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
+    return Stack(
+      children: [
+        // Blue background
+        Container(color: Colors.blue),
 
-            // Chatlist
-            Expanded(
-              child: BlocBuilder<ChatBloc, ChatState>(
-                builder: (context, state) {
-                  if (state is ChatLoading) {
-                    return const Center(
-                      child: CircularProgressIndicator(
-                        color: Colors.blue,
-                      ),
-                    );
-                  } else if (state is ChatError) {
-                    return Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Icons.error_outline,
-                            size: 64,
-                            color: Colors.grey[400],
-                          ),
-                          const SizedBox(height: 16),
-                          Text(
-                            'Failed to load chats',
-                            style: TextStyle(
-                              fontSize: 18,
-                              color: Colors.grey[600],
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            state.message,
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: Colors.grey[500],
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                          const SizedBox(height: 16),
-                          ElevatedButton(
-                            onPressed: () {
-                              context.read<ChatBloc>().add(
-                                const GetAllChatsEvent('current_user_id'),
-                              );
-                            },
-                            child: const Text('Retry'),
-                          ),
-                        ],
-                      ),
-                    );
-                  } else if (state is ChatLoaded) {
-                    final chats = state.chats;
-                    
-                    if (chats.isEmpty) {
-                      return Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                              Icons.chat_bubble_outline,
-                              size: 64,
-                              color: Colors.grey[400],
-                            ),
-                            const SizedBox(height: 16),
-                            Text(
-                              'No chats yet',
-                              style: TextStyle(
-                                fontSize: 18,
-                                color: Colors.grey[600],
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              'Start a conversation with someone!',
-                              style: TextStyle(
-                                fontSize: 14,
-                                color: Colors.grey[500],
-                              ),
-                            ),
-                          ],
-                        ),
-                      );
-                    }
-                    
-                    return RefreshIndicator(
-                      onRefresh: () async {
-                        context.read<ChatBloc>().add(
-                          const GetAllChatsEvent('current_user_id'),
-                        );
+        // Scaffold with transparent background
+        Scaffold(
+          backgroundColor: Colors.transparent,
+          body: SafeArea(
+            child: Column(
+              children: [
+                const SizedBox(height: 30), // ~3cm from top
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 16.0, vertical: 12),
+                  child: SizedBox(
+                    height: 90,
+                    child: ListView.builder(
+                      scrollDirection: Axis.horizontal,
+                      itemCount: dummyStories.length,
+                      itemBuilder: (context, index) {
+                        final story = dummyStories[index];
+                        return _buildStory(
+                            story["name"]!, story["image"]!);
                       },
-                      child: ListView.builder(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        itemCount: chats.length,
-                        itemBuilder: (context, index) {
-                          final chat = chats[index];
-                          return _buildChatTile(context, chat);
-                        },
-                      ),
-                    );
-                  }
-                  return const Center(
-                    child: Text(
-                      'Welcome to Chats',
-                      style: TextStyle(
-                        fontSize: 18,
-                        color: Colors.grey,
+                    ),
+                  ),
+                ),
+
+                SizedBox(height: 30,),
+
+                // White container for body
+                Expanded(
+                  child: Container(
+                    decoration: const BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.vertical(
+                        top: Radius.circular(30),
                       ),
                     ),
-                  );
-                },
-              ),
+                    child: Column(
+                      children: [
+
+                        // Chat List
+                        Expanded(
+                          child: BlocBuilder<ChatBloc, ChatState>(
+                            builder: (context, state) {
+                              if (state is ChatLoading) {
+                                return const Center(
+                                  child: CircularProgressIndicator(
+                                    color: Colors.blue,
+                                  ),
+                                );
+                              } else if (state is ChatError) {
+                                return Center(
+                                  child: Text(
+                                    'Failed to load chats\n${state.message}',
+                                    textAlign: TextAlign.center,
+                                  ),
+                                );
+                              } else if (state is ChatLoaded) {
+                                final chats = state.chats;
+                                if (chats.isEmpty) {
+                                  return const Center(
+                                      child: Text('No chats yet'));
+                                }
+                                return RefreshIndicator(
+                                  onRefresh: () async {
+                                    context.read<ChatBloc>().add(
+                                        const GetAllChatsEvent(
+                                            'current_user_id'));
+                                  },
+                                  child: ListView.builder(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 16),
+                                    itemCount: chats.length,
+                                    itemBuilder: (context, index) {
+                                      final chat = chats[index];
+                                      return _buildChatTile(context, chat);
+                                    },
+                                  ),
+                                );
+                              }
+                              return const SizedBox();
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
             ),
-          ],
+          ),
+          floatingActionButton: FloatingActionButton.extended(
+            onPressed: () => _showStartChatSheet(context),
+            icon: const Icon(Icons.chat_bubble_outline),
+            label: const Text('New Chat'),
+          ),
         ),
-      ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => _showStartChatSheet(context),
-        icon: const Icon(Icons.chat_bubble_outline),
-        label: const Text('New Chat'),
-      ),
+      ],
     );
   }
 
-  Widget _buildStory(String name) {
+  // Dummy stories data
+  static final List<Map<String, String>> dummyStories = [
+    {"name": "My status", "image": "https://i.pravatar.cc/150?img=1"},
+    {"name": "Adil", "image": "https://i.pravatar.cc/150?img=2"},
+    {"name": "Marina", "image": "https://i.pravatar.cc/150?img=3"},
+    {"name": "Dean", "image": "https://i.pravatar.cc/150?img=4"},
+    {"name": "Max", "image": "https://i.pravatar.cc/150?img=5"},
+  ];
+
+  // Build story avatar with gradient border
+  static Widget _buildStory(String name, String imageUrl) {
     return Padding(
-      padding: const EdgeInsets.only(right: 12),
+      padding: const EdgeInsets.only(right: 16),
       child: Column(
         children: [
-          CircleAvatar(
-            radius: 28,
-            backgroundColor: Colors.blue[100],
-            child: Text(
-              name.isNotEmpty ? name[0].toUpperCase() : '?',
-              style: TextStyle(
-                color: Colors.blue[700],
-                fontWeight: FontWeight.bold,
-                fontSize: 18,
+          Container(
+            padding: const EdgeInsets.all(2),
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: LinearGradient(
+                colors: [Colors.blueAccent, Colors.purpleAccent],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
               ),
+            ),
+            child: CircleAvatar(
+              radius: 28,
+              backgroundImage: NetworkImage(imageUrl),
             ),
           ),
           const SizedBox(height: 6),
-          Text(
-            name,
-            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
-            overflow: TextOverflow.ellipsis,
+          SizedBox(
+            width: 60,
+            child: Text(
+              name,
+              style: const TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+              ),
+              textAlign: TextAlign.center,
+              overflow: TextOverflow.ellipsis,
+            ),
           ),
         ],
       ),
     );
   }
 
+  // Build chat tile with blue background
   Widget _buildChatTile(BuildContext context, Chat chat) {
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Colors.blue[50],
         borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
-            spreadRadius: 1,
-            blurRadius: 3,
-            offset: const Offset(0, 1),
-          ),
-        ],
       ),
       child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: 16,
-          vertical: 8,
-        ),
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         leading: CircleAvatar(
           radius: 28,
           backgroundColor: Colors.blue[100],
-          child: chat.user2.name.isNotEmpty
-              ? Text(
-                  chat.user2.name[0].toUpperCase(),
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.blue[700],
-                  ),
-                )
-              : Icon(
-                  Icons.person,
-                  color: Colors.blue[700],
-                  size: 24,
-                ),
+          child: Text(
+            chat.user2.name.isNotEmpty
+                ? chat.user2.name[0].toUpperCase()
+                : '?',
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: Colors.blue[700],
+            ),
+          ),
         ),
         title: Text(
           chat.user2.name.isNotEmpty ? chat.user2.name : 'Unknown User',
@@ -284,62 +205,19 @@ class ChatHomePage extends StatelessWidget {
             fontSize: 14,
           ),
         ),
-        trailing: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.end,
-          children: [
-            Icon(
-              Icons.chevron_right,
-              color: Colors.grey[400],
-            ),
-          ],
+        trailing: Icon(
+          Icons.chevron_right,
+          color: Colors.grey[400],
         ),
         onTap: () {
-          // Navigate to chat detail page
-          // Navigator.push(
-          //   context,
-          //   MaterialPageRoute(
-          //     builder: (context) => ChatDetailPage(chat: chat),
-          //   ),
-          // );
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Opening chat with ${chat.user2.name}'),
-              duration: const Duration(seconds: 1),
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => ChatDetailPage(chat: chat),
             ),
           );
         },
       ),
-    );
-  }
-
-  void _showLogoutDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text('Logout'),
-          content: const Text('Are you sure you want to logout?'),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-              child: const Text('Cancel'),
-            ),
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-                context.read<AuthBloc>().add(LogoutEvent());
-              },
-              child: const Text(
-                'Logout',
-                style: TextStyle(color: Colors.red),
-              ),
-            ),
-          ],
-        );
-      },
     );
   }
 
@@ -365,7 +243,7 @@ class ChatHomePage extends StatelessWidget {
               TextField(
                 controller: controller,
                 decoration: const InputDecoration(
-                  labelText: 'User email or ID',
+                  labelText: 'User ID',
                   border: OutlineInputBorder(),
                 ),
               ),
@@ -373,12 +251,32 @@ class ChatHomePage extends StatelessWidget {
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton.icon(
-                  onPressed: () {
+                  onPressed: () async {
+                    final targetId = controller.text.trim();
+                    if (targetId.isEmpty) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                            content: Text('Please enter a user id')),
+                      );
+                      return;
+                    }
                     Navigator.of(ctx).pop();
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text('Creating chat with: ${controller.text.trim()}'),
-                      ),
+                    final res = await di.sl<InitiateChat>()(targetId);
+                    res.fold(
+                      (failure) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                              content: Text('Failed to create chat')),
+                        );
+                      },
+                      (chat) {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => ChatDetailPage(chat: chat),
+                          ),
+                        );
+                      },
                     );
                   },
                   icon: const Icon(Icons.send),

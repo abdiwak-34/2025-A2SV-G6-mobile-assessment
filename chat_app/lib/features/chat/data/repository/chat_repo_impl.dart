@@ -1,6 +1,7 @@
 import 'package:chat_app/core/error/exeception.dart';
 import 'package:chat_app/core/error/failures.dart';
 import 'package:chat_app/core/network_info.dart';
+import 'package:chat_app/core/socket/socket_service.dart';
 import 'package:chat_app/features/chat/data/datasources/chat_local_datasources.dart';
 import 'package:chat_app/features/chat/data/datasources/chat_remote_datasources.dart';
 import 'package:chat_app/features/chat/domain/entities/chat_entity.dart';
@@ -13,8 +14,10 @@ class ChatRepoImpl implements ChatRepository{
   final ChatLocalDataSource localDataSource;
   final ChatRemoteDataSource remoteDataSource;
   final NetworkInfo networkInfo;
+  final SocketService socketService;
 
-  ChatRepoImpl(this.localDataSource, this.remoteDataSource, this.networkInfo);
+
+  ChatRepoImpl(this.localDataSource, this.remoteDataSource, this.networkInfo, this.socketService);
 
   @override
   Future<Either<Failure, List<Chat>>> getChats() async {
@@ -110,4 +113,31 @@ class ChatRepoImpl implements ChatRepository{
     }
   }
   
+
+  Future<Either<Failure, Unit>> sendMessage(
+    String chatId, String message, String type) async {
+    try {
+      if (!await networkInfo.isConnected) {
+        return left(NetworkFailure('connection failed'));
+      }
+
+      if (!socketService.isConnected) {
+        await socketService.connect();
+      }
+
+      socketService.emit('message:send', {
+        'chatId': chatId,
+        'content': message,
+        'type': type,
+      });
+
+      return right(unit);
+    } on AuthException {
+      return left(AuthFailure('authentication failure'));
+    } on NotFoundException {
+      return left(NotFoundFailure('Not found'));
+    } on ServerExceptions {
+      return left(ServerFailure('server failure'));
+    }
+  }
 }

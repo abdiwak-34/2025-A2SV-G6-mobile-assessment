@@ -4,6 +4,7 @@ import 'package:chat_app/features/auth/domain/entities/login_entity.dart';
 import 'package:chat_app/features/auth/domain/entities/signup_entity.dart';
 import 'package:chat_app/features/auth/domain/entities/user_entity.dart';
 import 'package:chat_app/features/auth/domain/usecases/get_current_user.dart';
+import 'package:chat_app/features/auth/domain/usecases/get_users.dart';
 import 'package:chat_app/features/auth/domain/usecases/login_usecase.dart';
 import 'package:chat_app/features/auth/domain/usecases/logout_usecase.dart';
 import 'package:chat_app/features/auth/domain/usecases/sign_up_usecase.dart';
@@ -18,17 +19,20 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   final SignUpUsecase signUp;
   final LogoutUsecase logout;
   final GetcurrentUserUsecase getCurrentUser;
+  final GetUserUsecase getUsers;
 
   AuthBloc({
     required this.login,
     required this.signUp,
     required this.logout,
     required this.getCurrentUser,
+    required this.getUsers,
   }) : super(AuthInitial()) {
     on<LoginEvent>(_onLogin);
     on<SignUpEvent>(_onSignUp);
     on<LogoutEvent>(_onLogout);
     on<CheckAuthStatusEvent>(_onCheckAuthStatus);
+    on<GetUsersEvent>(_onGetUsers);
   }
 
   Future<void> _onLogin(LoginEvent event, Emitter<AuthState> emit) async {
@@ -44,7 +48,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         emit(AuthError(failure.toString()));
       },
       (token) async {
-        final userResult = await getCurrentUser(token);
+        final userResult = await getCurrentUser(NoParams());
         userResult.fold(
           (failure) => emit(AuthError(failure.toString())),
           (user) async {
@@ -90,5 +94,16 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     } catch (e) {
       emit(AuthError('Failed to check authentication status'));
     }
+  }
+
+  Future<void> _onGetUsers(GetUsersEvent event, Emitter<AuthState> emit) async {
+    emit(AuthLoading());
+    
+    final result = await getUsers(NoParams());
+
+    result.fold(
+      (failure) => emit(AuthError(failure.toString())),
+      (users) => emit(UsersLoaded(users)),
+    );
   }
 }

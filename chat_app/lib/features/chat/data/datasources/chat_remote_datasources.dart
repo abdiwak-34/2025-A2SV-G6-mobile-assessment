@@ -94,6 +94,8 @@ class ChatRemoteDataSourceImpl implements ChatRemoteDataSource {
     );
   }
 
+
+
   T _handleResponse<T>(
     http.Response response, {
     required T Function(Map<String, dynamic>) parse,
