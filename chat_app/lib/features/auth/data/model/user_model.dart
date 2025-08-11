@@ -9,10 +9,11 @@ class UserModel extends User {
   }) : super(id: id, name: name, email: email);
 
   factory UserModel.fromJson(Map<String, dynamic> json) {
+    final dynamicId = json['_id'] ?? json['id'];
     return UserModel(
-      id: json['id'],
-      name: json['name'],
-      email: json['email'],
+      id: dynamicId?.toString() ?? '',
+      name: (json['name'] ?? '').toString(),
+      email: (json['email'] ?? '').toString(),
     );
   }
 

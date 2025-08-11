@@ -38,9 +38,18 @@ class ChatRemoteDataSourceImpl implements ChatRemoteDataSource {
 
     return _handleResponse<List<ChatModel>>(
       response,
-      parse: (json) => (json['data'] as List)
-          .map((chatJson) => ChatModel.fromJson(chatJson))
-          .toList(),
+      parse: (json) {
+        final data = json['data'];
+        List<dynamic> rawList;
+        if (data is List) {
+          rawList = data;
+        } else if (data is Map<String, dynamic> && data['chats'] is List) {
+          rawList = data['chats'] as List;
+        } else {
+          throw ServerExceptions();
+        }
+        return rawList.map((e) => ChatModel.fromJson(e as Map<String, dynamic>)).toList();
+      },
     );
   }
 
@@ -51,7 +60,13 @@ class ChatRemoteDataSourceImpl implements ChatRemoteDataSource {
 
     return _handleResponse<ChatModel>(
       response,
-      parse: (json) => ChatModel.fromJson(json['data']),
+      parse: (json) {
+        final data = json['data'];
+        final chatJson = data is Map<String, dynamic> && data['chat'] is Map<String, dynamic>
+            ? data['chat'] as Map<String, dynamic>
+            : data as Map<String, dynamic>;
+        return ChatModel.fromJson(chatJson);
+      },
     );
   }
 
@@ -74,12 +89,19 @@ class ChatRemoteDataSourceImpl implements ChatRemoteDataSource {
     final response = await client.post(
       uri,
       headers: await _authHeaders(jsonContent: true),
-      body: jsonEncode({'participants': [userId]}),
+      // Backend expects an array of user ids under 'participants'
+      body: jsonEncode({'userId': userId}),
     );
 
     return _handleResponse<ChatModel>(
       response,
-      parse: (json) => ChatModel.fromJson(json['data']),
+      parse: (json) {
+        final data = json['data'];
+        final chatJson = data is Map<String, dynamic> && data['chat'] is Map<String, dynamic>
+            ? data['chat'] as Map<String, dynamic>
+            : data as Map<String, dynamic>;
+        return ChatModel.fromJson(chatJson);
+      },
     );
   }
 
@@ -105,12 +127,22 @@ class ChatRemoteDataSourceImpl implements ChatRemoteDataSource {
     if (statusCode >= 200 && statusCode < 300) {
       if (response.body.isEmpty) throw ServerExceptions();
       final body = jsonDecode(response.body) as Map<String, dynamic>;
-      return parse(body);
+      try {
+        return parse(body);
+      } catch (_) {
+        // Parsing mismatch with expected schema
+        throw ServerExceptions();
+      }
     } else if (statusCode == 401) {
       throw AuthException();
     } else if (statusCode == 404) {
       throw NotFoundException();
     } else {
+      // Debug aid: log status and short body
+      try {
+        // ignore: avoid_print
+        print('Chat API error ${response.request?.url} (${response.statusCode}): ${response.body}');
+      } catch (_) {}
       throw ServerExceptions();
     }
   }

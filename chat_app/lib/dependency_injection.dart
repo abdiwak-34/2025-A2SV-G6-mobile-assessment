@@ -9,6 +9,7 @@ import 'package:chat_app/features/chat/domain/usecases/get_all_chats.dart';
 import 'package:chat_app/features/chat/domain/usecases/get_chat_messages.dart';
 import 'package:chat_app/features/chat/domain/usecases/get_single_chat_usecase.dart';
 import 'package:chat_app/features/chat/domain/usecases/initiate_chat.dart';
+import 'package:chat_app/features/chat/domain/usecases/send_message.dart';
 import 'package:chat_app/features/chat/presentation/bloc/bloc/chat_bloc.dart';
 import 'package:http/http.dart' as http;
 import 'package:chat_app/features/auth/data/datasources/local_data_sources.dart';
@@ -60,9 +61,10 @@ Future<void> init() async {
   sl.registerLazySingleton<GetAllChatsUsecase>(()=>GetAllChatsUsecase(sl()));
   sl.registerLazySingleton<GetChatByIdUsecase>(() => GetChatByIdUsecase(sl()));
   sl.registerLazySingleton<DeleteChatUsecase>(() => DeleteChatUsecase(sl()));
-  sl.registerLazySingleton<InitiateChat>(() => InitiateChat(sl()));
+  sl.registerLazySingleton<InitiateChatUsecase>(() => InitiateChatUsecase(sl()));
   sl.registerLazySingleton<GetChatMessages>(() => GetChatMessages(sl()));
+  sl.registerLazySingleton<SendMessage>(() => SendMessage(sl()));
 
   sl.registerFactory<AuthBloc>(() => AuthBloc(login: sl(), signUp: sl(), logout: sl(), getCurrentUser: sl(), getUsers: sl()));
-  sl.registerFactory<ChatBloc>(()=>ChatBloc(getAllChats: sl()));
+  sl.registerFactory<ChatBloc>(()=>ChatBloc(getAllChats: sl(), initiateChat: sl(), getChatMessages: sl(), sendMessage: sl()));
 }

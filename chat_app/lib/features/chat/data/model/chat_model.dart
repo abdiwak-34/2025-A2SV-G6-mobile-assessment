@@ -10,10 +10,31 @@ class ChatModel extends Chat {
   }) : super(id: id, user1: user1, user2: user2);
 
   factory ChatModel.fromJson(Map<String, dynamic> json) {
+    final id = json['_id'] ?? json['id'];
+    if (json.containsKey('user1') && json.containsKey('user2')) {
+      return ChatModel(
+        id: id,
+        user1: UserModel.fromJson(json['user1']),
+        user2: UserModel.fromJson(json['user2']),
+      );
+    }
+    // Some APIs return participants: [user1, user2]
+    if (json.containsKey('participants') && json['participants'] is List) {
+      final parts = (json['participants'] as List);
+      // Expecting two populated user objects
+      final user1Json = parts.isNotEmpty ? parts[0] as Map<String, dynamic> : <String, dynamic>{};
+      final user2Json = parts.length > 1 ? parts[1] as Map<String, dynamic> : <String, dynamic>{};
+      return ChatModel(
+        id: id,
+        user1: UserModel.fromJson(user1Json),
+        user2: UserModel.fromJson(user2Json),
+      );
+    }
+    // Fallback (will likely throw if data incomplete)
     return ChatModel(
-      id: json['_id'],
-      user1: UserModel.fromJson(json['user1']),
-      user2: UserModel.fromJson(json['user2']),
+      id: id,
+      user1: UserModel.fromJson(json['user1'] ?? {}),
+      user2: UserModel.fromJson(json['user2'] ?? {}),
     );
   }
 

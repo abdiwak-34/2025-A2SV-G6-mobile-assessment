@@ -37,7 +37,8 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
       if (token.isEmpty) {
         throw AuthException();
       }
-      localDataSource.cacheAccessToken(token);
+      // Ensure token is cached before any subsequent authenticated requests
+      await localDataSource.cacheAccessToken(token);
       return token;
       
     } catch (e) {
@@ -130,12 +131,27 @@ Future<List<UserModel>> getUsers() async {
       final body = jsonDecode(rawBody) as Map<String, dynamic>;
       print(body);
 
-      if (body['data'] == null || body['data']['access_token'] == null) {
+      // Accept token in several common shapes
+      String? token;
+      final data = body['data'];
+      if (data is Map<String, dynamic>) {
+        token = (data['access_token'] ?? data['token'])?.toString();
+      }
+      token ??= (body['access_token'] ?? body['token'])?.toString();
+
+      if (token == null || token.isEmpty) {
         throw Exception("No access token in response");
       }
 
-      return body['data']['access_token'] as String;
+      return token;
     } else {
+      // Log server-provided message when available
+      try {
+        final body = rawBody.isNotEmpty ? jsonDecode(rawBody) as Map<String, dynamic> : {};
+        print('Auth error ${response.statusCode}: ${body['message'] ?? rawBody}');
+      } catch (_) {
+        print('Auth error ${response.statusCode}: $rawBody');
+      }
       throw AuthException();
     }
   }
@@ -153,11 +169,24 @@ Future<List<UserModel>> getUsers() async {
     final body = jsonDecode(response.body) as Map<String, dynamic>;
 
     if (statusCode == 200 || statusCode == 201) {
-      if (body['data'] != null) {
-        return UserModel.fromJson(body['data']);
-      } else {
-        throw AuthException();
+      // Try common shapes: data.user -> data -> user -> flat body
+      dynamic candidate = body['data'];
+      if (candidate is Map<String, dynamic> && candidate['user'] is Map<String, dynamic>) {
+        candidate = candidate['user'];
       }
+      if (candidate == null && body['user'] is Map<String, dynamic>) {
+        candidate = body['user'];
+      }
+      if (candidate == null && body.isNotEmpty) {
+        candidate = body;
+      }
+
+      if (candidate is Map<String, dynamic>) {
+        return UserModel.fromJson(candidate);
+      }
+
+      print('Unexpected user response shape: $body');
+      throw AuthException();
     } else {
       print('Error response: ${body['message'] ?? 'Unknown error'}');
       throw AuthException();

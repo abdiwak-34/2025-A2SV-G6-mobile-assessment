@@ -50,7 +50,6 @@ class _LoginScreenState extends State<LoginScreen> {
                 );
               }
               if (state is Authenticated) {
-                // Navigate to chat home on successful login
                 Navigator.pushReplacementNamed(context, '/chat');
               }
             },

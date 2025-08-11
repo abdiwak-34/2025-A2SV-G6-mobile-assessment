@@ -16,3 +16,19 @@ final class ChatError extends ChatState{
 
   ChatLoaded(this.chats);
  }
+
+ class ChatInitiated extends ChatState {
+  final Chat chat;
+
+  ChatInitiated(this.chat);
+}
+
+class ChatMessagesLoaded extends ChatState {
+  final List<Message> messages;
+
+  ChatMessagesLoaded(this.messages);
+}
+
+class ChatMessageSended extends ChatState {
+  ChatMessageSended();
+}

@@ -25,6 +25,12 @@ class AuthRepositoryImpl implements AuthRepository {
 
   @override
   Future<Either<Failure, User>> getCurrentUser() async {
+    // Prefer cached user to keep UX smooth after login
+    final cached = await localDataSource.getCachedUser();
+    if (cached != null) {
+      return Right(cached);
+    }
+
     if (!await networkInfo.isConnected) {
       return Left(NetworkFailure('No internet connection'));
     }
@@ -45,7 +51,6 @@ class AuthRepositoryImpl implements AuthRepository {
   @override
   Future<Either<Failure, String>> login(LoginData data) async {
     if (!await networkInfo.isConnected) {
-      print('Network is not connected');
       return Left(NetworkFailure('network failure'));
     }
 
