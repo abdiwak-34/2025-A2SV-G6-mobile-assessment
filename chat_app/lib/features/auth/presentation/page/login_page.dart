@@ -49,6 +49,10 @@ class _LoginScreenState extends State<LoginScreen> {
                   SnackBar(content: Text(state.message)),
                 );
               }
+              if (state is Authenticated) {
+                // Navigate to chat home on successful login
+                Navigator.pushReplacementNamed(context, '/chat');
+              }
             },
             builder: (context, state) {
               return Column(
@@ -122,10 +126,18 @@ class _LoginScreenState extends State<LoginScreen> {
                       onPressed: state is AuthLoading
                           ? null
                           : () {
+                              final email = _emailController.text.trim();
+                              final password = _passwordController.text.trim();
+                              if (email.isEmpty || password.isEmpty) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(content: Text('Please enter email and password')),
+                                );
+                                return;
+                              }
                               context.read<AuthBloc>().add(
                                     LoginEvent(
-                                      _emailController.text,
-                                      _passwordController.text,
+                                      email,
+                                      password,
                                     ),
                                   );
                             },
